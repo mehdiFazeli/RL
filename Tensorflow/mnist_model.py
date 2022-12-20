@@ -13,29 +13,33 @@ from numpy import genfromtxt
 
 def scale(data):
   images =  data[:,1:].reshape(-1, 28, 28)
-  #images =  data[:,1:]
   labels =  data[:,0]
   images = tf.cast(images, tf.float32)
   images /= 255
   return  {'images': images, 'labels':labels}
 
 train_raw_data = genfromtxt('/content/sample_data/mnist_train_small.csv', delimiter=',')
-test_validation_data = genfromtxt('/content/sample_data/mnist_test.csv', delimiter=',')
+test_raw_data = genfromtxt('/content/sample_data/mnist_test.csv', delimiter=',')
 
-train_shuffled_data = np.random.shuffle(train_raw_data);
-test_validation_shuffled_data = np.random.shuffle(test_validation_data)
+data = np.append(train_raw_data, test_raw_data).reshape(-1, 785)
+np.random.shuffle(data)
 
-validationSize = tf.cast(test_validation_data.shape[0] * 0.5, tf.int64)
+validation_size = tf.cast(data.shape[0] * 0.05, tf.int64)
+test_size = tf.cast(data.shape[0] * 0.1, tf.int64)
 
-validation_raw_data = test_validation_data[:validationSize]
-test_raw_data = test_validation_data[validationSize:]
+train_raw_data = data [:-(validation_size + test_size)]
+validation_raw_data = data[-(validation_size + test_size): - test_size]
+test_raw_data = data [-test_size: ]
+
+print(train_raw_data.shape)
+print(validation_raw_data.shape)
+print(test_raw_data.shape)
 
 train_data = scale(train_raw_data)
 validation_data = scale(validation_raw_data)
 test_data = scale(test_raw_data)
 
-print(train_data['labels'][0])
-print(train_data['images'][0])
+print (train_data['images'].shape)
 
 input_size = 784
 output_size = 10
@@ -50,7 +54,7 @@ model = tf.keras.Sequential([
 
 model.compile(optimizer='adam', loss='SparseCategoricalCrossentropy', metrics=['accuracy'])
 
-model.fit(x= train_data['images'], y = train_data['labels'], batch_size= 32, epochs= 3, 
+model.fit(x= train_data['images'], y = train_data['labels'], batch_size= 128, epochs= 5, 
           validation_data=(validation_data['images'], validation_data['labels']), verbose=2)
 
 model.evaluate(test_data['images'], test_data['labels'])
